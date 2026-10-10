@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PokéVault — Collect. Trade. Auction. Sell.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/animations.css"/>
+  <!-- Critical inline styles so page is never white even before CSS loads -->
+  <style>
+    html,body{margin:0;padding:0;background:#0d0f1a;color:#e8eaf6;font-family:sans-serif;}
+    #loadingScreen{position:fixed;inset:0;background:#0d0f1a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:1.5rem;}
+    #loadingScreen.hidden{display:none!important;}
+    .pb-spin{width:64px;height:64px;border-radius:50%;overflow:hidden;border:3px solid rgba(255,255,255,.15);animation:pbspin 1.2s linear infinite;box-shadow:0 0 30px rgba(249,211,56,.3);}
+    .pb-t{background:#e53e3e;height:45%;}
+    .pb-m{background:#fff;height:10%;position:relative;display:flex;align-items:center;justify-content:center;}
+    .pb-m::before{content:'';position:absolute;width:100%;height:2px;background:#111;}
+    .pb-b{background:#f0f0f0;height:45%;}
+    .pb-i{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid #111;position:relative;z-index:1;}
+    .pb-lt{font-family:monospace;font-size:.85rem;color:#6b74a3;letter-spacing:.1em;}
+    @keyframes pbspin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+
+<!-- ── LOADING SCREEN (shown immediately, hidden by JS) ── -->
+<div id="loadingScreen" class="hidden">
+  <div class="pb-spin">
+    <div class="pb-t"></div>
+    <div class="pb-m"><div class="pb-i"></div></div>
+    <div class="pb-b"></div>
+  </div>
+  <p class="pb-lt">Loading PokéVault...</p>
+</div>
+
+<!-- ── ANNOUNCEMENT BANNER (injected by JS) ────────────── -->
+<div id="announcementBanners"></div>
+
+<!-- ── TOAST ─────────────────────────────────────────────── -->
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- ── NAVBAR ────────────────────────────────────────────── -->
+<nav class="navbar" id="navbar">
+  <a href="/" class="nav-logo">
+    <svg width="36" height="36" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;filter:drop-shadow(0 0 8px rgba(249,211,56,.35))">
+      <circle cx="18" cy="18" r="17" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+      <path d="M 1 18 A 17 17 0 0 1 35 18 Z" fill="#e53e3e"/>
+      <path d="M 1 18 A 17 17 0 0 0 35 18 Z" fill="#efefef"/>
+      <rect x="1" y="16" width="34" height="4" fill="#111827"/>
+      <circle cx="18" cy="18" r="6" fill="#111827"/>
+      <circle cx="18" cy="18" r="4.5" fill="white"/>
+      <circle cx="18" cy="18" r="2" fill="#111827"/>
+    </svg>
+    <span class="logo-text">Poké<span class="logo-vault">Vault</span></span>
+  </a>
+
+  <div class="nav-links" id="navLinks">
+    <a href="/" class="nav-link" data-page="home">Home</a>
+    <a href="/marketplace" class="nav-link" data-page="marketplace">Marketplace</a>
+    <a href="/auctions" class="nav-link" data-page="auctions">Auctions</a>
+    <a href="/trades" class="nav-link" data-page="trades">Trades</a>
+    <a href="/leaderboard" class="nav-link" data-page="leaderboard">Leaderboard</a>
+  </div>
+
+  <div class="nav-actions" id="navActions">
+    <div id="navGuest" class="nav-guest">
+      <a href="/login" class="btn btn-ghost">Log In</a>
+      <a href="/signup" class="btn btn-primary">Sign Up</a>
+    </div>
+    <div id="navUser" class="nav-user hidden">
+      <a href="/collection" class="nav-link" data-page="collection">My Collection</a>
+      <button class="notif-btn" id="notifBtn" onclick="toggleNotifications()">
+        <span class="notif-bell">🔔</span>
+        <span class="notif-badge hidden" id="notifBadge">0</span>
+      </button>
+      <a href="/messages" class="notif-btn" id="msgBtn" title="Messages" style="text-decoration:none;position:relative">
+        <span>💬</span>
+        <span class="notif-badge hidden" id="msgBadge">0</span>
+      </a>
+      <div class="nav-avatar-wrap" id="navAvatarWrap">
+        <img id="navAvatar" class="nav-avatar" src="/img/default-avatar.svg" alt="avatar" onclick="toggleUserMenu()"/>
+        <div class="user-dropdown hidden" id="userDropdown">
+          <a href="/dashboard" class="dropdown-item">📊 Dashboard</a>
+          <a href="/profile" class="dropdown-item" id="myProfileLink">👤 Profile</a>
+          <a href="/upload" class="dropdown-item">🃏 Upload Card</a>
+          <div id="adminMenuLink" class="hidden">
+            <a href="/admin" class="dropdown-item admin-item">⚙️ Admin Panel</a>
+          </div>
+          <hr class="dropdown-divider"/>
+          <button class="dropdown-item logout-btn" onclick="logout()">🚪 Log Out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileMenu()">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- ── NOTIFICATIONS PANEL ───────────────────────────────── -->
+<div class="notif-panel hidden" id="notifPanel">
+  <div class="notif-panel-header">
+    <h3>Notifications</h3>
+    <button onclick="markAllRead()" class="btn-link">Mark all read</button>
+  </div>
+  <div id="notifList" class="notif-list">
+    <div class="empty-state-mini">No notifications yet</div>
+  </div>
+</div>
+<div class="notif-overlay hidden" id="notifOverlay" onclick="closeNotifications()"></div>
+
+<!-- ── MAIN APP ───────────────────────────────────────────── -->
+<main id="app"></main>
+
+<!-- ── MODAL ─────────────────────────────────────────────── -->
+<div class="modal-overlay hidden" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal-box" id="modalBox"></div>
+</div>
+
+<!-- Scripts load in order; app.js bootstraps everything -->
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/router.js"></script>
+<script src="/js/ui.js"></script>
+<script src="/js/pages/home.js"></script>
+<script src="/js/pages/marketplace.js"></script>
+<script src="/js/pages/card-detail.js"></script>
+<script src="/js/pages/upload.js"></script>
+<script src="/js/pages/auctions.js"></script>
+<script src="/js/pages/auction-detail.js"></script>
+<script src="/js/pages/trades.js"></script>
+<script src="/js/pages/dashboard.js"></script>
+<script src="/js/pages/collection.js"></script>
+<script src="/js/pages/leaderboard.js"></script>
+<script src="/js/pages/profile.js"></script>
+<script src="/js/pages/login.js"></script>
+<script src="/js/pages/signup.js"></script>
+<script src="/js/pages/admin.js"></script>
+<script src="/js/pages/messages.js"></script>
+<script src="/js/app.js"></script>
+
+<!-- ── ENTER SPLASH (one-time, starts music) ──────────────── -->
+<div id="enterSplash" style="
+  position:fixed;inset:0;background:#0d0f1a;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:99998;cursor:pointer;gap:1.5rem;
+  animation:fadeIn .5s ease;" onclick="enterVault()">
+  <svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg"
+       style="filter:drop-shadow(0 0 25px rgba(249,211,56,.5));animation:float 2s ease-in-out infinite">
+    <circle cx="45" cy="45" r="43" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+    <path d="M 2 45 A 43 43 0 0 1 88 45 Z" fill="#e53e3e"/>
+    <path d="M 2 45 A 43 43 0 0 0 88 45 Z" fill="#efefef"/>
+    <rect x="2" y="40" width="86" height="10" fill="#111827"/>
+    <circle cx="45" cy="45" r="15" fill="#111827"/>
+    <circle cx="45" cy="45" r="11" fill="white"/>
+    <circle cx="45" cy="45" r="5" fill="#111827"/>
+  </svg>
+  <h1 style="font-family:'Orbitron',sans-serif;font-size:2.2rem;font-weight:900;background:linear-gradient(135deg,#f9d338,#ff6eb4,#4d96ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">
+    PokéVault
+  </h1>
+  <p style="color:#9fa8c9;font-size:1rem;letter-spacing:.08em">Click anywhere to enter</p>
+  <div style="display:flex;gap:.5rem;margin-top:.3rem">
+    <span style="width:8px;height:8px;border-radius:50%;background:#f9d338;animation:pulse 1.2s ease-in-out infinite"></span>
+    <span style="width:8px;height:8px;border-radius:50%;background:#ff6eb4;animation:pulse 1.2s ease-in-out .2s infinite"></span>
+    <span style="width:8px;height:8px;border-radius:50%;background:#4d96ff;animation:pulse 1.2s ease-in-out .4s infinite"></span>
+  </div>
+</div>
+
+<!-- ── Background Music ────────────────────────────────────── -->
+<audio id="bgMusic" loop preload="auto" style="display:none" controlsList="nodownload nofullscreen noremoteplayback" oncontextmenu="return false">
+  <source src="/audio/poke-vault-music.mp3" type="audio/mpeg"/>
+</audio>
+<script>
+function enterVault() {
+  var splash = document.getElementById('enterSplash');
+  var audio  = document.getElementById('bgMusic');
+  // Start music — this click IS the user gesture browsers require
+  audio.volume = 0.35;
+  audio.play().catch(function(e){ console.warn('Audio:', e); });
+  // Fade out splash
+  splash.style.transition = 'opacity .6s ease';
+  splash.style.opacity    = '0';
+  setTimeout(function(){ splash.style.display = 'none'; }, 650);
+  // Remember so splash doesn't show again this session
+  try { sessionStorage.setItem('pv_entered','1'); } catch(e){}
+}
+// If already entered this session, skip splash
+(function(){
+  try {
+    if (sessionStorage.getItem('pv_entered') === '1') {
+      var s = document.getElementById('enterSplash');
+      if (s) s.style.display = 'none';
+      // Still try to play (may work if browser is lenient)
+      var a = document.getElementById('bgMusic');
+      if (a) { a.volume = 0.35; a.play().catch(function(){}); }
+    }
+  } catch(e){}
+})();
+</script>
+</body>
+</html>

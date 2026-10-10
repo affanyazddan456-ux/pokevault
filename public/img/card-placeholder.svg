@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420">
+  <rect width="300" height="420" rx="16" fill="#1e2240"/>
+  <rect x="15" y="15" width="270" height="390" rx="12" fill="none" stroke="#2e3460" stroke-width="2"/>
+  <!-- Pokéball icon -->
+  <circle cx="150" cy="190" r="60" fill="none" stroke="#2e3460" stroke-width="3"/>
+  <path d="M 90 190 A 60 60 0 0 1 210 190 Z" fill="#e53e3e" opacity="0.4"/>
+  <path d="M 90 190 A 60 60 0 0 0 210 190 Z" fill="#f0f0f0" opacity="0.2"/>
+  <rect x="90" y="185" width="120" height="10" fill="#1e2240"/>
+  <circle cx="150" cy="190" r="16" fill="#1e2240" stroke="#2e3460" stroke-width="2"/>
+  <circle cx="150" cy="190" r="8" fill="#2e3460"/>
+  <!-- Text -->
+  <text x="150" y="310" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#6b74a3">No Image</text>
+</svg>
