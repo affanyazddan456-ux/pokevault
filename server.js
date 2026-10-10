@@ -45,31 +45,43 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // ── Core middleware ────────────────────────────────────────
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ── Session (disk on local, memory on Railway/cloud) ──────
-const isCloud = !!process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_PROJECT_ID;
+// ── Session ────────────────────────────────────────────────
+const isCloud = !!process.env.RAILWAY_ENVIRONMENT ||
+                !!process.env.RAILWAY_PROJECT_ID  ||
+                process.env.NODE_ENV === 'production';
+
 const sessionConfig = {
-  secret: process.env.SESSION_SECRET || 'pokevault-secret-2024',
-  resave: false,
-  saveUninitialized: false,
-  proxy: true,
+  secret:            process.env.SESSION_SECRET || 'pokevault-secret-2024',
+  resave:            true,
+  saveUninitialized: true,
+  proxy:             true,
   cookie: {
-    secure: false,
+    secure:   false,      // false works on both HTTP and HTTPS through Railway's proxy
     httpOnly: true,
-    sameSite: 'lax',
-    maxAge: 30 * 24 * 60 * 60 * 1000
+    sameSite: 'none',     // required for cross-origin Railway proxy
+    maxAge:   30 * 24 * 60 * 60 * 1000
   }
 };
+
+// Local dev only: persist to disk
 if (!isCloud) {
-  // Local: persist sessions to disk
-  const NedbStore = require('connect-nedb-session')(session);
-  sessionConfig.store = new NedbStore({
-    filename: path.join(__dirname, 'data', 'sessions.db')
-  });
+  try {
+    const NedbStore = require('connect-nedb-session')(session);
+    sessionConfig.store = new NedbStore({
+      filename: path.join(__dirname, 'data', 'sessions.db')
+    });
+  } catch(e) {}
 }
+
 app.use(session(sessionConfig));
 
 // ── Static files ───────────────────────────────────────────
