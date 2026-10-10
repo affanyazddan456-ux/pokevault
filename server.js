@@ -24,6 +24,9 @@ const appealRoutes  = require('./routes/appeals');
 const app = express();
 const PORT = process.env.PORT || process.env.NODE_PORT || 3000;
 
+// Trust Railway's reverse proxy
+app.set('trust proxy', 1);
+
 // ── Prevent crashes from unhandled errors ──────────────────
 process.on('unhandledRejection', (reason) => {
   console.error('[UNHANDLED REJECTION]', reason);
@@ -52,9 +55,11 @@ const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'pokevault-secret-2024',
   resave: false,
   saveUninitialized: false,
+  proxy: true,
   cookie: {
-    secure: isCloud,
+    secure: false,
     httpOnly: true,
+    sameSite: 'lax',
     maxAge: 30 * 24 * 60 * 60 * 1000
   }
 };
@@ -110,7 +115,14 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
 });
 
-// ── Start ──────────────────────────────────────────────────
-app.listen(PORT, () => {
+// ── Auto-promote IS_DOSK to admin on first boot ────────────
+app.listen(PORT, async () => {
   console.log(`\n🃏 PokéVault running at http://localhost:${PORT}\n`);
+  try {
+    const u = await db.users.findOne({ username: 'IS_DOSK' });
+    if (u && !u.isAdmin) {
+      await db.users.update({ username: 'IS_DOSK' }, { $set: { isAdmin: true } });
+      console.log('✅ IS_DOSK promoted to admin');
+    }
+  } catch(e) {}
 });
